@@ -1,0 +1,177 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0c10">
+  <meta name="description" content="Choose a sorcerer, build cursed energy, and survive Domain Clash: Cursed Arena.">
+  <title>Domain Clash: Cursed Arena</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./js/main.js"></script>
+</head>
+<body>
+  <canvas id="vfx-canvas" aria-hidden="true"></canvas>
+
+  <section class="screen-overlay is-visible" id="character-select" aria-label="Character select">
+    <div class="selection-panel">
+      <div class="title-lockup">
+        <span class="eyebrow">A CURSED ARENA SURVIVAL RUN</span>
+        <h1>DOMAIN CLASH<span>: CURSED ARENA</span></h1>
+        <p>Select your sorcerer. The enemy lineup is randomized; the King of Curses waits at the end.</p>
+      </div>
+      <div class="character-grid" id="character-grid" aria-label="Playable characters"></div>
+      <div class="difficulty-picker" role="group" aria-label="Difficulty">
+        <span class="difficulty-label">DIFFICULTY</span>
+        <div class="difficulty-options">
+          <button class="difficulty-button" type="button" data-difficulty="easy" aria-pressed="false">EASY</button>
+          <button class="difficulty-button is-active" type="button" data-difficulty="medium" aria-pressed="true">MEDIUM</button>
+          <button class="difficulty-button" type="button" data-difficulty="hard" aria-pressed="false">HARD</button>
+        </div>
+      </div>
+      <div class="selection-footer">
+        <div class="selection-stats">
+          <span>BEST STAGE <strong id="record-best">01</strong></span>
+          <span>BLACK FLASHES <strong id="record-flashes">0</strong></span>
+          <span>ARENA CLEARS <strong id="record-clears">0</strong></span>
+          <button class="text-button" id="stats-button" type="button">RUN STATS</button>
+        </div>
+        <button class="primary-button" id="start-run" type="button" disabled>CHOOSE A FIGHTER <span aria-hidden="true">↗</span></button>
+      </div>
+      <details class="how-to">
+        <summary>HOW TO PLAY</summary>
+        <p>Play cards to attack, guard, heal, and build Domain Gauge. Time any attack at the center for a Black Flash; the outer timing band gives a Good hit. Read each enemy intent and manage Block and Cursed Energy between turns.</p>
+        <p><kbd>1–4</kbd> play card <kbd>SPACE</kbd> lock attack timing <kbd>E</kbd> end turn <kbd>D</kbd> Domain Expansion</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="screen-overlay end-overlay" id="run-overlay" aria-label="Run summary" hidden>
+    <div class="end-panel">
+      <span class="eyebrow" id="run-outcome">EXPEDITION ENDED</span>
+      <h2 id="run-title">THE CURSE PREVAILS</h2>
+      <div class="run-summary">
+        <div><span>STAGES CLEARED</span><strong id="summary-stages">0 / 5</strong></div>
+        <div><span>BLACK FLASHES</span><strong id="summary-flashes">0</strong></div>
+        <div><span>PEAK DAMAGE</span><strong id="summary-damage">0</strong></div>
+      </div>
+      <div class="end-actions">
+        <button class="secondary-button" id="change-fighter" type="button">CHANGE FIGHTER</button>
+        <button class="primary-button" id="play-again" type="button">PLAY AGAIN <span aria-hidden="true">↻</span></button>
+      </div>
+    </div>
+  </section>
+
+  <dialog class="stats-modal" id="stats-modal" aria-labelledby="stats-title">
+    <div class="modal-heading">
+      <div><span class="eyebrow">YOUR RECORD</span><h2 id="stats-title">RUN STATS</h2></div>
+      <button class="modal-close" id="close-stats" type="button" aria-label="Close run stats">×</button>
+    </div>
+    <div class="run-summary">
+      <div><span>BEST STAGE</span><strong id="modal-best">01</strong></div>
+      <div><span>BLACK FLASHES</span><strong id="modal-flashes">0</strong></div>
+      <div><span>ARENA CLEARS</span><strong id="modal-clears">0</strong></div>
+    </div>
+  </dialog>
+
+  <main class="game-shell" id="game-shell" hidden>
+    <header class="topbar" aria-label="Battle status">
+      <a class="brand" href="./" aria-label="Domain Clash home">
+        <img class="brand-logo" src="./assets/jujutsu_kaisen_logo.png" alt="Jujutsu Kaisen logo" onerror="this.hidden=true">
+        <span class="brand-copy"><strong>DOMAIN CLASH</strong><small>CURSED ARENA</small></span>
+      </a>
+      <div class="stage-readout">
+        <span class="eyebrow">STAGE</span>
+        <strong id="stage-value">01</strong>
+        <span class="stage-total">/ 05</span>
+        <small class="boss-phase-label" id="boss-phase-label" hidden>HEIAN PHASE</small>
+      </div>
+      <button class="mute-toggle" id="mute-toggle" type="button" aria-label="Mute audio" aria-pressed="false" title="Mute audio">
+        <span class="mute-icon" aria-hidden="true">♫</span>
+        <span class="mute-label">SOUND ON</span>
+      </button>
+      <div class="fighter-hud">
+        <div id="fighter-hud-portrait" class="mini-portrait"></div>
+        <div class="fighter-hud-copy"><span class="eyebrow" id="fighter-title">SORCERER</span><strong id="fighter-name">Yuji Itadori</strong></div>
+      </div>
+      <section class="hud-stat hp-stat" aria-label="Player health and block">
+        <div class="stat-heading"><span>PLAYER VITALS</span><strong id="player-hp-label">100 / 100</strong></div>
+        <div class="meter hp-meter" role="progressbar" aria-label="Player health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span id="player-hp-fill"></span></div>
+        <div class="vitals-sub"><span class="block-chip" id="player-block">BLOCK 0</span><span class="player-statuses" id="player-statuses"></span></div>
+      </section>
+      <section class="hud-stat ce-stat" aria-label="Cursed energy">
+        <div class="stat-heading"><span>CURSED ENERGY</span><strong id="ce-label">04 / 10</strong></div>
+        <div class="orbs" id="ce-orbs" aria-label="Cursed energy"></div>
+      </section>
+      <section class="hud-stat domain-stat" aria-label="Domain gauge">
+        <div class="stat-heading"><span>DOMAIN GAUGE</span><strong id="domain-label">00%</strong></div>
+        <div class="meter domain-meter" role="progressbar" aria-label="Domain gauge" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="domain-fill"></span></div>
+      </section>
+    </header>
+
+    <section class="arena" aria-label="Battle arena">
+      <div class="arena-grain" aria-hidden="true"></div>
+      <div class="arena-caption"><span class="live-dot"></span><span id="battle-status">CURSED PRESENCE DETECTED</span></div>
+      <div class="arena-floor" aria-hidden="true"></div>
+      <article class="enemy-card" id="enemy-card" aria-labelledby="enemy-name">
+        <div class="enemy-topline">
+          <span class="enemy-rank" id="enemy-rank">SPECIAL GRADE</span>
+          <span class="intent-badge" id="enemy-intent" tabindex="0">
+            <span aria-hidden="true">⚔</span>
+            <span id="intent-text">ATTACK</span>
+            <span class="intent-tooltip" id="intent-tooltip" role="tooltip">Enemy intent</span>
+          </span>
+        </div>
+        <div class="enemy-art" id="enemy-art"><div class="enemy-portrait" id="enemy-portrait"></div></div>
+        <div class="enemy-info">
+          <div class="enemy-title">
+            <div><span class="eyebrow">CURSED SPIRIT</span><h2 id="enemy-name">Enemy</h2></div>
+            <span class="enemy-level" id="enemy-block">BLOCK 0</span>
+          </div>
+          <div class="stat-heading enemy-hp-heading"><span>VITALITY</span><strong id="enemy-hp-label">0 / 0</strong></div>
+          <div class="meter enemy-meter" role="progressbar" aria-label="Enemy health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><span id="enemy-hp-fill"></span></div>
+          <div class="enemy-statuses" id="enemy-statuses"></div>
+        </div>
+      </article>
+      <div class="arena-quote" aria-live="polite" id="battle-message">Read the intent. Choose your move.</div>
+    </section>
+
+    <section class="timing-panel" id="timing-panel" aria-label="Black Flash timing challenge" hidden>
+      <div class="timing-copy"><span class="eyebrow">BLACK FLASH</span><strong>Strike on the beat</strong></div>
+      <div class="rhythm-track" id="rhythm-track" role="img" aria-label="Moving timing cursor with center Black Flash zone">
+        <span class="track-line"></span>
+        <span class="good-zone" aria-hidden="true"></span>
+        <span class="sweet-spot" aria-hidden="true"></span>
+        <span class="timing-cursor" id="timing-cursor"></span>
+      </div>
+      <div class="timing-readout" id="timing-readout" aria-live="polite">SPACE / TAP</div>
+      <button class="timing-hit" id="timing-hit" type="button">HIT</button>
+    </section>
+
+    <section class="hand-dock" aria-label="Player hand and turn controls">
+      <div class="hand-heading">
+        <div><span class="eyebrow">YOUR HAND</span><span class="hand-count" id="hand-count">04 CARDS</span></div>
+        <div class="turn-indicator"><span class="turn-pip"></span><span id="turn-label">YOUR TURN</span></div>
+      </div>
+      <div class="hand-layout">
+        <div class="hand" id="hand" aria-label="Cards in hand"></div>
+        <section class="reward-panel" id="reward-panel" aria-label="Choose a battle reward" hidden>
+          <div class="reward-heading"><span class="eyebrow">VICTORY REWARD · RESTORED 20 HP</span><strong>Choose one technique</strong></div>
+          <div class="reward-choices" id="reward-choices"></div>
+        </section>
+        <aside class="action-dock">
+          <button class="end-turn-button" id="end-turn" type="button"><span>END TURN <small>· E</small></span><span aria-hidden="true">↗</span></button>
+          <button class="domain-button" id="domain-button" type="button" disabled>
+            <span class="domain-symbol" aria-hidden="true">領</span>
+            <span><strong>DOMAIN EXPANSION <small>· D</small></strong><small id="domain-button-hint">GAUGE REQUIRED · 100%</small></span>
+            <span class="domain-arrow" aria-hidden="true">↗</span>
+          </button>
+        </aside>
+      </div>
+      <footer class="bottomline">
+        <span>DOMAIN CLASH <span class="muted">//</span> CURSED ARENA</span>
+        <span id="deck-count">DECK 00 <span class="muted">·</span> DISCARD 00</span>
+      </footer>
+    </section>
+  </main>
+</body>
+</html>
