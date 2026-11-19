@@ -37,4 +37,3 @@ Each run samples four opponents from the enemy roster and ends with Ryomen Sukun
 
 Add optional lowercase JPEG portraits at the paths under `assets/characters/` and `assets/enemies/`. If an image is absent or fails to load, the game displays a matching in-game cursed-sigil fallback without showing a broken-image icon.
 
-https://laurenianthony.github.io/domain-clash-cursed-arena/
