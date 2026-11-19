@@ -1,6 +1,10 @@
 ﻿# Domain Clash: Cursed Arena
 
-A zero-dependency static card battler inspired by Jujutsu Kaisen. It runs on GitHub Pages and uses native ES modules, the Canvas API, and Web Audio API.
+A zero-dependency static card battler inspired by *Jujutsu Kaisen*. Built with pure HTML5, CSS3, and vanilla JavaScript (native ES modules, Canvas API VFX, and Web Audio API synthesized sound) with `localStorage` persistence and no backend required.
+
+**Live Demo:** [https://laurenianthony.github.io/domain-clash-cursed-arena/](https://laurenianthony.github.io/domain-clash-cursed-arena/)
+
+---
 
 ## Start a run
 
